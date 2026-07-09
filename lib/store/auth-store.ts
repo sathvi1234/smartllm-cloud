@@ -138,6 +138,17 @@ export const useAuthStore = create<AuthStore>()(
             localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
             localStorage.removeItem(STORAGE_KEYS.USER);
           }
+        } else {
+          // For demo purposes, automatically log in the demo user
+          const demoUser = mockUsers['demo@smartllm.ai'].user;
+          const demoToken = `token_${Date.now()}_demo`;
+          set({
+            user: demoUser,
+            token: demoToken,
+            isAuthenticated: true,
+          });
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, demoToken);
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
         }
       },
     }),
