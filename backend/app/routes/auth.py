@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import select
+from sqlalchemy import select
 from datetime import timedelta
 
 from app.database import get_db
 from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.models import User
-from app.utils import hash_password, verify_password, create_access_token, verify_token, InvalidCredentials, ConflictError
+from app.utils.auth import hash_password, verify_password, create_access_token, verify_token
+from app.utils.exceptions import InvalidCredentials, ConflictError
 
 router = APIRouter()
 
@@ -65,20 +66,28 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(
-    token: str = None,
+    authorization: str = Header(None),
     db: AsyncSession = Depends(get_db),
 ):
     """Get current authenticated user"""
     
-    if not token:
-        raise InvalidCredentials("No token provided")
+    if not authorization:
+        raise InvalidCredentials("No authorization header provided")
+    
+    # Extract token from Authorization header
+    try:
+        scheme, token = authorization.split(" ")
+        if scheme.lower() != "bearer":
+            raise ValueError("Invalid authentication scheme")
+    except ValueError:
+        raise InvalidCredentials("Invalid authorization header format")
     
     # Verify token
     try:
         payload = verify_token(token)
         user_id = int(payload.get("sub"))
-    except Exception:
-        raise InvalidCredentials()
+    except Exception as e:
+        raise InvalidCredentials(f"Invalid token: {str(e)}")
     
     # Get user
     query = select(User).where(User.id == user_id)

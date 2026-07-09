@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import init_db, close_db
+from app.database import init_db, close_db, AsyncSessionLocal
+from app.seed import seed_database
 from app.routes import auth, projects, prompts, analytics, api_keys, billing, settings as settings_routes
 
 # Lifespan context manager
@@ -11,6 +12,8 @@ from app.routes import auth, projects, prompts, analytics, api_keys, billing, se
 async def lifespan(app: FastAPI):
     # Startup
     await init_db()
+    async with AsyncSessionLocal() as db:
+        await seed_database(db)
     yield
     # Shutdown
     await close_db()

@@ -9,20 +9,20 @@ class Settings(BaseSettings):
     API_TITLE: str = "SmartLLM Cloud API"
     API_VERSION: str = "1.0.0"
     API_DESCRIPTION: str = "AI Cost & Token Optimization Platform API"
-    DEBUG: bool = False
+    DEBUG: bool = True
     
-    # Database
-    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost:5432/smartllm"
+    # Database - SQLite for development, PostgreSQL for production
+    DATABASE_URL: str = "sqlite:///./smartllm.db"
     DATABASE_ECHO: bool = False
     
     # JWT
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = "dev-secret-key-change-in-production-smartllm-2024"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
     # CORS
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001"]
+    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001", "http://localhost:8000", "http://127.0.0.1:3000"]
     
     # Redis (optional, for caching)
     REDIS_URL: Optional[str] = None

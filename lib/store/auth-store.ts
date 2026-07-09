@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, AuthState } from '../types';
 import { STORAGE_KEYS } from '../constants';
+import { apiClient } from '../api-client';
 
 interface AuthStore extends AuthState {
   setUser: (user: User | null) => void;
@@ -45,21 +46,15 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 800));
-
-          const mockUser = mockUsers[email];
-          if (!mockUser || mockUser.password !== password) {
-            throw new Error('Invalid email or password');
-          }
-
-          const token = `token_${Date.now()}_${Math.random()}`;
+          const result = await apiClient.login(email, password);
           set({
-            user: mockUser.user,
-            token,
+            user: result.user,
+            token: result.token,
             isAuthenticated: true,
             isLoading: false,
           });
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, result.token);
+          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(result.user));
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Login failed';
           set({
@@ -84,32 +79,9 @@ export const useAuthStore = create<AuthStore>()(
       register: async (email: string, password: string, name: string) => {
         set({ isLoading: true, error: null });
         try {
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-
-          if (mockUsers[email]) {
-            throw new Error('Email already exists');
-          }
-
-          const newUser: User = {
-            id: `user_${Date.now()}`,
-            email,
-            name,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          mockUsers[email] = {
-            password,
-            user: newUser,
-          };
-
-          const token = `token_${Date.now()}_${Math.random()}`;
+          const user = await apiClient.register(email, password, name);
           set({
-            user: newUser,
-            token,
-            isAuthenticated: true,
+            user,
             isLoading: false,
           });
         } catch (error) {
@@ -138,17 +110,6 @@ export const useAuthStore = create<AuthStore>()(
             localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
             localStorage.removeItem(STORAGE_KEYS.USER);
           }
-        } else {
-          // For demo purposes, automatically log in the demo user
-          const demoUser = mockUsers['demo@smartllm.ai'].user;
-          const demoToken = `token_${Date.now()}_demo`;
-          set({
-            user: demoUser,
-            token: demoToken,
-            isAuthenticated: true,
-          });
-          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, demoToken);
-          localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
         }
       },
     }),

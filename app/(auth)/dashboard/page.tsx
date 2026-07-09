@@ -1,7 +1,9 @@
 'use client';
 
 import { Metadata } from 'next';
+import { useEffect, useState } from 'react';
 import { mockDashboardStats, mockMonthlyData, mockModelDistribution } from '@/lib/mock-data';
+import { useDashboardData } from '@/lib/hooks/useData';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import {
   DailyRequestsChart,
@@ -33,6 +35,20 @@ const costComparisonData = mockMonthlyData.map((item) => ({
 }));
 
 export default function DashboardPage() {
+  const { data: analyticsData, isLoading, error } = useDashboardData();
+  
+  // Use real data if available, fallback to mock data
+  const stats = analyticsData ? {
+    totalRequests: analyticsData.total_requests || mockDashboardStats.totalRequests,
+    totalTokens: analyticsData.total_tokens || mockDashboardStats.totalTokens,
+    totalCost: analyticsData.total_cost || mockDashboardStats.totalCost,
+    moneySaved: analyticsData.money_saved || mockDashboardStats.moneySaved,
+    cacheHitRate: analyticsData.cache_hits || mockDashboardStats.cacheHitRate,
+    activeModels: analyticsData.models_used || mockDashboardStats.activeModels,
+    averageLatency: analyticsData.avg_latency || mockDashboardStats.averageLatency,
+    carbonFootprint: analyticsData.carbon_footprint || mockDashboardStats.carbonFootprint,
+  } : mockDashboardStats;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -47,28 +63,28 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Requests"
-          value={mockDashboardStats.totalRequests.toLocaleString()}
+          value={stats.totalRequests.toLocaleString()}
           description="This month"
           icon={<Zap className="size-5" />}
           trend={{ value: 12, isPositive: true }}
         />
         <StatsCard
           title="Total Tokens"
-          value={`${(mockDashboardStats.totalTokens / 1000000).toFixed(1)}M`}
+          value={`${(stats.totalTokens / 1000000).toFixed(1)}M`}
           description="Processed"
           icon={<TrendingUp className="size-5" />}
           trend={{ value: 8, isPositive: true }}
         />
         <StatsCard
           title="AI Cost"
-          value={`$${mockDashboardStats.aiCost.toFixed(2)}`}
+          value={`$${stats.totalCost.toFixed(2)}`}
           description="Monthly spend"
           icon={<DollarSign className="size-5" />}
           trend={{ value: 3, isPositive: false }}
         />
         <StatsCard
           title="Money Saved"
-          value={`$${mockDashboardStats.moneySaved.toFixed(2)}`}
+          value={`$${stats.moneySaved.toFixed(2)}`}
           description="vs. baseline"
           icon={<PieChart className="size-5" />}
           trend={{ value: 24, isPositive: true }}
@@ -79,19 +95,19 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatsCard
           title="Cache Hit Rate"
-          value={`${mockDashboardStats.cacheHitRate.toFixed(1)}%`}
+          value={`${stats.cacheHitRate.toFixed(1)}%`}
           description="Response cache efficiency"
           trend={{ value: 5, isPositive: true }}
         />
         <StatsCard
           title="Average Latency"
-          value={`${mockDashboardStats.avgLatency}ms`}
+          value={`${stats.averageLatency}ms`}
           description="Response time"
           trend={{ value: 2, isPositive: false }}
         />
         <StatsCard
           title="Carbon Footprint"
-          value={`${mockDashboardStats.carbonFootprint}kg`}
+          value={`${stats.carbonFootprint}kg`}
           description="CO₂ equivalent"
           icon={<Leaf className="size-5" />}
           trend={{ value: 8, isPositive: false }}

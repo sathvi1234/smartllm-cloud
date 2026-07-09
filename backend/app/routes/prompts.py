@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import select
+from sqlalchemy import select
 
 from app.database import get_db
 from app.schemas.prompt import PromptCreate, PlaygroundRequest, PlaygroundResponse
@@ -8,12 +8,33 @@ from app.models import Prompt, Response
 from app.services.llm_providers import LLMFactory
 from app.services.prompt_optimizer import PromptOptimizer
 from app.services.model_router import ModelRouter
+from app.utils.auth import verify_token
+from app.utils.exceptions import InvalidCredentials
 
 router = APIRouter()
 
 
+async def get_current_user_id(authorization: str = Header(None)) -> int:
+    """Extract user ID from authorization header"""
+    if not authorization:
+        raise InvalidCredentials("No authorization header")
+    
+    try:
+        scheme, token = authorization.split(" ")
+        if scheme.lower() != "bearer":
+            raise ValueError("Invalid scheme")
+        payload = verify_token(token)
+        return int(payload.get("sub"))
+    except Exception:
+        raise InvalidCredentials("Invalid token")
+
+
 @router.post("/playground", response_model=PlaygroundResponse)
-async def playground(request: PlaygroundRequest, user_id: int = 1, db: AsyncSession = Depends(get_db)):
+async def playground(
+    request: PlaygroundRequest,
+    user_id: int = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Run playground prompt and get response"""
     
     try:
