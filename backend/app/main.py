@@ -11,12 +11,18 @@ from app.routes import auth, projects, prompts, analytics, api_keys, billing, se
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    await init_db()
-    async with AsyncSessionLocal() as db:
-        await seed_database(db)
+    try:
+        await init_db()
+        async with AsyncSessionLocal() as db:
+            await seed_database(db)
+    except Exception as e:
+        print(f"[v0] Startup warning: {e}")
     yield
     # Shutdown
-    await close_db()
+    try:
+        await close_db()
+    except Exception:
+        pass
 
 # Create FastAPI app
 app = FastAPI(
